@@ -1,43 +1,29 @@
 import axios from 'axios';
 import { toast } from 'react-toastify';
 
-// Create a new Axios instance with a base URL
 const apiClient = axios.create({
-    baseURL: `${import.meta.env.VITE_API_URL}/api` // Backend URL from .env
+    baseURL: import.meta.env.VITE_API_URL + "/api"
 });
 
-// --- THE CRITICAL INTERCEPTOR ---
 apiClient.interceptors.response.use(
-    (response) => {
-        return response;
-    }, 
+    (response) => response,
     (error) => {
-        if (error.response) {
-            const { status } = error.response;
-
-            if (status === 401) {
-                toast.error("Your session has expired. Please log in again.");
-
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-
-                setTimeout(() => {
-                    window.location.href = '/login';
-                }, 1500);
-            }
+        if (error.response && error.response.status === 401) {
+            toast.error("Session expired. Please log in again.");
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 1500);
         }
         return Promise.reject(error);
     }
 );
 
-apiClient.interceptors.request.use(config => {
+apiClient.interceptors.request.use((config) => {
     const token = localStorage.getItem('token');
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-    }
+    if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
-}, error => {
-    return Promise.reject(error);
 });
 
 export default apiClient;
